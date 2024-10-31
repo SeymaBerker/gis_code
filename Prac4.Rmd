@@ -4,26 +4,90 @@ output: html_document
 date: "2024-10-31"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
+library(terra)
+library(here)
+jan<-terra::rast("/Users/han/Desktop/CASA0005 /Prac3/prac3_data/wc2.1_5m_tavg_01.tif")
+# have a look at the raster layer jan
+plot(jan)
+```
+```{r}
+library(sf)
+library(tmap) 
+library(tmaptools)
+library(RSQLite)
+library(tidyverse)
+library(here)
+library(fs)
+library(raster)
+library(terra)
+library(plotly)
+library(dplyr)
+library(stringr)
+library(countrycode)
+
+library(ggplot2)
+library(readr)
+library(janitor)
+```
+```{r}
+#Load data Gender Inequality Data 
+GenderInequality<-read_csv("HDR23-24_Composite_indices_complete_time_series.csv")
+class(GenderInequality)
+
+#Examing New Data
+Datatypelist<-GenderInequality%>%
+  summarise_all(class)%>%
+  pivot_longer(everything(), 
+               names_to="All_variables", 
+               values_to="Variable_class")
+
+Datatypelist
+  
+```
+```{r}
+#Load spatial data of the world
+library(sf)
+world_map<-st_read(here::here("World_Countries_(Generalized)_9029012925078512962.geojson"))
+```
+```{r}
+#extract the required gender inequality data
+gender_data<-GenderInequality[, c("iso3","country","gii_2010","gii_2019")]
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+#Use na.omit() to remove rows containing NA
+final_gender_data<-na.omit(gender_data)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```
+```{r}
+#creat new column of difference in inequality between 2010 and 2019
+Inequality_Diff_between_2010_and_2019<-final_gender_data %>%
+  mutate(Inequalitydiff=gii_2010-gii_2019)
 ```
 
-## Including Plots
+```{r}
+#change to ISO3 in world_map
+world_map<-world_map %>%
+  mutate(ISO3 = countrycode(ISO, "iso2c", "iso3c"))
 
-You can also embed plots, for example:
+#Merge using country iso3
+world_data<-world_map %>%
+  left_join(Inequality_Diff_between_2010_and_2019, by = c("ISO3" = "iso3"))
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+#Use na.omit() to remove rows containing NA
+world_data<-na.omit(world_data)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+#visulisation in map
+library(ggplot2)
+
+ggplot(data = world_data) +
+  geom_sf(aes(fill = Inequalitydiff)) +
+  scale_fill_viridis_c() +
+  theme_minimal() +
+  labs(title = "Gender inequality changes between 2010 and 2019")
+```
+
