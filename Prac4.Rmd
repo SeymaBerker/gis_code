@@ -3,6 +3,97 @@ title: "Prac4"
 output: html_document
 date: "2024-10-31"
 ---
+# Load the required libraries for raster and file handling
+library(terra)
+library(here)
+
+# Load the raster layer for January temperature data
+jan <- terra::rast("/Users/han/Desktop/CASA0005 /Prac3/prac3_data/wc2.1_5m_tavg_01.tif")
+
+# Visualize the raster layer to examine its structure
+plot(jan)
+
+#Hey Han Guo, some comments that might help!
+## Add short comments to describe what each step does.
+## Remove Unused Libraries
+
+# I have copied my response below - Hope this helps.
+
+################
+#Week 4 Homework
+################
+
+
+# Load the necessary libraries for spatial analysis, visualization, and data manipulation
+library(sf)
+library(tmap)
+library(tmaptools)
+library(RSQLite)
+library(tidyverse)
+library(here)
+library(fs)
+library(raster)
+library(terra)
+library(plotly)
+library(dplyr)
+library(stringr)
+library(countrycode)
+library(ggplot2)
+library(readr)
+library(janitor)
+a.attr('aria-controls', id);                                                                               
+
+# Load the Gender Inequality data
+GenderInequality <- read_csv("HDR23-24_Composite_indices_complete_time_series.csv")
+
+# Check the data type of each column
+Datatypelist <- GenderInequality %>%
+  summarise_all(class) %>%
+  pivot_longer(everything(), 
+               names_to = "All_variables", 
+               values_to = "Variable_class")
+
+# Display the data type list
+Datatypelist
+
+# Load spatial data for the world (GeoJSON format)
+world_map <- st_read(here::here("World_Countries_(Generalized)_9029012925078512962.geojson"))
+
+# Extract the required columns for gender inequality data
+gender_data <- GenderInequality[, c("iso3", "country", "gii_2010", "gii_2019")]
+
+# Remove rows with missing values from gender_data
+final_gender_data <- na.omit(gender_data)
+
+# Create a new column showing the difference in gender inequality between 2010 and 2019
+Inequality_Diff_between_2010_and_2019 <- final_gender_data %>%
+  mutate(Inequalitydiff = gii_2010 - gii_2019)
+
+# Convert ISO2 codes in world_map to ISO3 codes for consistency
+world_map <- world_map %>%
+  mutate(ISO3 = countrycode(ISO, "iso2c", "iso3c"))
+
+# Merge spatial data with gender inequality data using ISO3 codes
+world_data <- world_map %>%
+  left_join(Inequality_Diff_between_2010_and_2019, by = c("ISO3" = "iso3"))
+
+# Remove rows with missing values in the merged dataset
+world_data <- na.omit(world_data)
+
+# Visualize the change in gender inequality between 2010 and 2019 using a map
+ggplot(data = world_data) +
+  geom_sf(aes(fill = Inequalitydiff)) + # Color regions based on inequality difference
+  scale_fill_viridis_c() + # Use a color scale suitable for continuous data
+  theme_minimal() + # Apply a minimalistic theme
+  labs(title = "Gender inequality changes between 2010 and 2019") # Add a descriptive title
+
+
+
+
+
+
+
+
 
 ```{r}
 library(terra)
